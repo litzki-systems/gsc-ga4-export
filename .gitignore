@@ -1,0 +1,7 @@
+credentials.json
+gsc_ga4_token.json
+.env
+.DS_Store
+__pycache__/
+*.pyc
+gsc_export_output/
