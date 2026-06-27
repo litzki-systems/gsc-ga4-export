@@ -88,5 +88,8 @@ def safe_filename(prop):
 
 
 def normalise_url(url):
-    return url.rstrip("/").lower() \
-               .replace("https://", "").replace("http://", "").replace("www.", "")
+    u = url.rstrip("/").lower()
+    u = u.replace("https://", "").replace("http://", "")
+    if u.startswith("www."):
+        u = u[4:]
+    return u

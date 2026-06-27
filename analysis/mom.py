@@ -22,10 +22,12 @@ def prev_period(date_start, date_end):
 
 
 def merge(cur_rows, prev_rows, key_field="page"):
+    cur_map  = {r[key_field]: r for r in cur_rows}
     prev_map = {r[key_field]: r for r in prev_rows}
+    all_keys = list(cur_map) + [k for k in prev_map if k not in cur_map]
     result   = []
-    for r in cur_rows:
-        k    = r[key_field]
+    for k in all_keys:
+        r    = cur_map.get(k, {key_field: k, "clicks": 0, "impressions": 0, "ctr": 0, "position": 0})
         prev = prev_map.get(k, {})
 
         def delta(field):

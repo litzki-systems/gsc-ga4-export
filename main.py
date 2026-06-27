@@ -199,9 +199,12 @@ class App(tk.Tk):
             try:
                 gsc, ga4 = get_services()
                 props    = fetch_all_gsc_properties(gsc)
-                self.after(0, lambda: self._on_loaded(gsc, ga4, props, loading))
+                if self.winfo_exists():
+                    self.after(0, lambda: self._on_loaded(gsc, ga4, props, loading))
             except Exception as e:
-                self.after(0, lambda: self._on_load_error(str(e), loading))
+                err = str(e)
+                if self.winfo_exists():
+                    self.after(0, lambda: self._on_load_error(err, loading))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -270,11 +273,15 @@ class App(tk.Tk):
         messagebox.showerror("Connection Error", msg)
 
     def _log(self, msg):
+        # Called from background thread — schedule on main thread
+        if self.winfo_exists():
+            self.after(0, self._log_main, msg)
+
+    def _log_main(self, msg):
         self.log_box.configure(state="normal")
         self.log_box.insert("end", msg + "\n")
         self.log_box.see("end")
         self.log_box.configure(state="disabled")
-        self.update_idletasks()
 
     def _start_export(self):
         props   = [p for p, v in self.prop_vars.items()   if v.get()]
@@ -300,10 +307,14 @@ class App(tk.Tk):
                   f"{self.date_var.get()} | {self.fmt_var.get().upper()}\n")
 
         def on_done(success):
-            self.run_btn.configure(state="normal", text="Start Export")
-            if success:
-                messagebox.showinfo("Done",
-                    f"Export complete.\nFolder: {OUTPUT_DIR.resolve()}")
+            # Called from background thread — schedule on main thread
+            def _finish():
+                self.run_btn.configure(state="normal", text="Start Export")
+                if success:
+                    messagebox.showinfo("Done",
+                        f"Export complete.\nFolder: {OUTPUT_DIR.resolve()}")
+            if self.winfo_exists():
+                self.after(0, _finish)
 
         threading.Thread(
             target=run_export,

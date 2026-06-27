@@ -1,6 +1,7 @@
 """
 GA4 data fetchers: Pages, Traffic Sources.
 """
+import traceback
 from google.analytics.data_v1beta.types import (
     RunReportRequest, Dimension, Metric, DateRange
 )
@@ -34,7 +35,7 @@ def fetch_pages(ga4, property_id, date_start, date_end, log):
         } for row in resp.rows]
         return sorted(rows, key=lambda x: x["sessions"], reverse=True)
     except Exception as e:
-        log(f"    GA4 pages ERROR: {e}")
+        log(f"    GA4 ERROR: {e}\n{traceback.format_exc()}")
         return []
 
 

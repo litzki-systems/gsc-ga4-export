@@ -97,26 +97,28 @@ def run_export(gsc, ga4_client, selected_props, selected_reports,
             if "merge" in selected_reports and ga4_id and gsc_pages_raw:
                 log("    Merge: GSC + GA4")
                 base    = prop.replace("sc-domain:", "").rstrip("/")
-                gsc_map = {normalise_url(r["keys"][0]): r for r in gsc_pages_raw}
-                merge_rows = []
+                ga4_map = {}
                 for g in ga4_rows:
                     full_url = f"https://{base}{g['page_path']}"
-                    key      = normalise_url(full_url)
-                    gsc_r    = gsc_map.get(key, {})
+                    ga4_map[normalise_url(full_url)] = g
+                merge_rows = []
+                for gsc_r in gsc_pages_raw:
+                    gsc_url = gsc_r["keys"][0]
+                    g       = ga4_map.get(normalise_url(gsc_url), {})
                     merge_rows.append({
-                        "url":             full_url,
-                        "page_title":      g["page_title"],
-                        "sessions":        g["sessions"],
-                        "pageviews":       g["pageviews"],
-                        "bounce_rate":     g["bounce_rate"],
-                        "avg_duration_s":  g["avg_duration_s"],
-                        "engagement_rate": g["engagement_rate"],
+                        "url":             gsc_url,
+                        "page_title":      g.get("page_title", ""),
+                        "sessions":        g.get("sessions", ""),
+                        "pageviews":       g.get("pageviews", ""),
+                        "bounce_rate":     g.get("bounce_rate", ""),
+                        "avg_duration_s":  g.get("avg_duration_s", ""),
+                        "engagement_rate": g.get("engagement_rate", ""),
                         "gsc_clicks":      gsc_r.get("clicks", ""),
                         "gsc_impressions": gsc_r.get("impressions", ""),
-                        "gsc_ctr":         round(gsc_r.get("ctr", 0)*100, 2) if gsc_r else "",
-                        "gsc_position":    round(gsc_r.get("position", 0), 1) if gsc_r else "",
+                        "gsc_ctr":         round(gsc_r.get("ctr", 0)*100, 2),
+                        "gsc_position":    round(gsc_r.get("position", 0), 1),
                     })
-                merge_rows.sort(key=lambda x: x["sessions"], reverse=True)
+                merge_rows.sort(key=lambda x: x.get("gsc_clicks") or 0, reverse=True)
                 hdrs = ["url","page_title","sessions","pageviews","bounce_rate",
                         "avg_duration_s","engagement_rate",
                         "gsc_clicks","gsc_impressions","gsc_ctr","gsc_position"]

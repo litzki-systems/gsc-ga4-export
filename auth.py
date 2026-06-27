@@ -13,11 +13,17 @@ from config import SCOPES, CREDENTIALS_FILE, TOKEN_FILE
 def get_credentials():
     creds = None
     if TOKEN_FILE.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
+        try:
+            creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
+        except Exception:
+            pass
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            try:
+                creds.refresh(Request())
+            except Exception:
+                creds = None  # refresh failed → force full re-auth
+        if not creds:
             if not CREDENTIALS_FILE.exists():
                 raise FileNotFoundError(
                     f"{CREDENTIALS_FILE} not found.\n"
@@ -26,6 +32,7 @@ def get_credentials():
             flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_FILE), SCOPES)
             creds = flow.run_local_server(port=0)
         TOKEN_FILE.write_text(creds.to_json())
+        TOKEN_FILE.chmod(0o600)
     return creds
 
 
