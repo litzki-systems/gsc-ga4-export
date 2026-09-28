@@ -54,7 +54,9 @@ This tool does all of that locally, in one run, with a clean XLSX output you can
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.10+ with Tkinter for the GUI. It ships with the python.org and Homebrew
+  builds on macOS; on Debian/Ubuntu install it separately (`sudo apt install python3-tk`).
+  Headless mode does not need it.
 - A Google Cloud project with Search Console API and Analytics Data API enabled
 - OAuth 2.0 credentials (Desktop app)
 - Optional: PageSpeed Insights API key
@@ -62,6 +64,14 @@ This tool does all of that locally, in one run, with a clean XLSX output you can
 
 ```bash
 pip install -r requirements.txt
+```
+
+`requirements.txt` lists only what the project imports directly, with upper bounds so a
+breaking major release cannot land unnoticed on an unattended run. For a byte-identical
+environment — worth it for cron — install the fully pinned set instead:
+
+```bash
+pip install -r requirements.lock.txt
 ```
 
 ---
@@ -166,7 +176,8 @@ your data.
 ├── output/
 │   └── xlsx.py          # XLSX formatting and export
 ├── docs/                # Screenshots
-├── requirements.txt
+├── requirements.txt     # Direct dependencies, version ranges
+├── requirements.lock.txt # Fully pinned environment
 ├── .env.example
 └── credentials.example.json
 ```

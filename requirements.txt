@@ -1,7 +1,15 @@
-google-api-python-client>=2.190.0
-google-auth>=2.50.0
-google-auth-oauthlib>=1.4.0
-google-auth-httplib2>=0.4.0
-google-analytics-data>=0.22.0
-openpyxl>=3.1.5
-requests>=2.33.0
+# Dependencies this project imports directly. Transitive ones are resolved by
+# pip — for a fully pinned, reproducible set use requirements.lock.txt instead:
+#   pip install -r requirements.lock.txt
+#
+# Upper bounds stop a breaking major release from silently landing on an
+# unattended (cron/headless) run.
+
+google-api-python-client>=2.190.0,<3
+google-auth>=2.50.0,<3
+google-auth-oauthlib>=1.4.0,<2
+google-analytics-data>=0.22.0,<1
+openpyxl>=3.1.5,<4
+
+# Called by "GSC Export starten.command" to point SSL_CERT_FILE at a CA bundle.
+certifi
