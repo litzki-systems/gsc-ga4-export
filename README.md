@@ -85,6 +85,7 @@ Edit `.env`:
 
 ```env
 PSI_API_KEY=your_psi_api_key_here
+REPORT_BRAND=Analytics Report
 RESEND_API_KEY=your_resend_api_key_here
 RESEND_TO=you@example.com
 RESEND_FROM=reports@yourdomain.com
@@ -94,6 +95,10 @@ WEEKLY_PROPERTIES=sc-domain:yourdomain.com,sc-domain:otherdomain.com
 GA4_sc-domain:yourdomain.com=123456789
 GA4_sc-domain:otherdomain.com=987654321
 ```
+
+`REPORT_BRAND` is the title on the XLSX summary sheet and the GUI footer. It defaults to
+the neutral `Analytics Report`, so the tool ships unbranded — set it to your own name if
+you hand the reports to clients.
 
 **3. Run**
 

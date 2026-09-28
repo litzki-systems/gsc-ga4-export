@@ -77,6 +77,12 @@ def load_env():
     return env
 
 
+# Branding for the XLSX summary sheet and the GUI footer.
+# Set REPORT_BRAND in .env to use your own; the default is deliberately neutral
+# so a fork produces unbranded reports.
+REPORT_BRAND = load_env().get("REPORT_BRAND", "").strip() or "Analytics Report"
+
+
 def weekly_properties(env):
     """GSC properties for the weekly / headless run, read from .env WEEKLY_PROPERTIES.
 

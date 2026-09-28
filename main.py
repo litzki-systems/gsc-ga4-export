@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 from config import (
     ALL_REPORTS, DATE_RANGES, GA4_MAP, weekly_properties,
-    PSI_TOP_N_MANUAL, OUTPUT_DIR, load_env, safe_filename,
+    PSI_TOP_N_MANUAL, OUTPUT_DIR, REPORT_BRAND, load_env, safe_filename,
 )
 from auth import get_services, fetch_all_gsc_properties
 from runner import run_export, run_headless
@@ -190,7 +190,7 @@ class App(tk.Tk):
             state="disabled", command=self._start_export)
         self.run_btn.pack(fill="x", pady=(4, 0))
 
-        label(wrap, "© Litzki Systems LLC", size=9, color=SUBTEXT).pack(pady=(6, 0))
+        label(wrap, REPORT_BRAND, size=9, color=SUBTEXT).pack(pady=(6, 0))
 
     def _load_services(self):
         loading = LoadingScreen(self)

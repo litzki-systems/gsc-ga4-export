@@ -8,6 +8,8 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 from pathlib import Path
 
+from config import REPORT_BRAND
+
 HEADER_FILL = PatternFill("solid", fgColor="1e3a5f")
 HEADER_FONT = Font(bold=True, color="FFFFFF", name="Arial")
 ALT_FILL    = PatternFill("solid", fgColor="EEF3FF")
@@ -80,7 +82,7 @@ def write_summary(ws, tabs):
     ws.freeze_panes = "A2"
     ws.sheet_view.showGridLines = False
 
-    ws["A1"] = "SOVP Analytics Report — © Litzki Systems LLC"
+    ws["A1"] = REPORT_BRAND
     ws["A1"].font = Font(name="Arial", bold=True, size=13, color="1e3a5f")
     ws["A1"].fill = PatternFill("solid", fgColor="EEF3FF")
     ws.merge_cells("A1:D1")
