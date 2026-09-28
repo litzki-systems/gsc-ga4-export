@@ -54,9 +54,9 @@ This tool does all of that locally, in one run, with a clean XLSX output you can
 
 ## Requirements
 
-- Python 3.10+ with Tkinter for the GUI. It ships with the python.org and Homebrew
+- Python 3.10+. The GUI needs Tkinter, which ships with the python.org and Homebrew
   builds on macOS; on Debian/Ubuntu install it separately (`sudo apt install python3-tk`).
-  Headless mode does not need it.
+  `--headless` imports tkinter only on the GUI path, so it runs on a server without it.
 - A Google Cloud project with Search Console API and Analytics Data API enabled
 - OAuth 2.0 credentials (Desktop app)
 - Optional: PageSpeed Insights API key
@@ -129,8 +129,22 @@ python3 main.py --headless
 Runs with the properties defined in `WEEKLY_PROPERTIES` and sends results by email if
 `RESEND_API_KEY`, `RESEND_TO` and `RESEND_FROM` are all set.
 
-`WEEKLY_PROPERTIES` is required in headless mode — there are no built-in defaults, and the
-run exits with code `2` if it is unset.
+Authentication is never interactive here. The browser sign-in flow would block forever on
+a machine with no browser, so headless mode refuses it and exits instead — run
+`python3 main.py` once on a desktop to create `gsc_ga4_token.json`, then copy it over.
+
+Exit codes, so cron can tell what happened:
+
+| Code | Meaning |
+|---|---|
+| `0` | Every requested step completed |
+| `1` | A step failed: a GA4 or sitemap fetch, email delivery, or no files produced |
+| `2` | `WEEKLY_PROPERTIES` is not set |
+| `3` | Credentials missing, or a browser sign-in would be required |
+
+A failed step is reported on stdout under `FAILED —` and never hidden behind a zero exit.
+PageSpeed Insights is the one exception: a single URL that fails is recorded in the report
+itself with its error, listed as degraded in the log, and does not fail the run.
 
 ---
 
@@ -160,7 +174,8 @@ your data.
 ## Project structure
 
 ```
-├── main.py              # GUI entry point
+├── main.py              # Entry point; imports tkinter only for the GUI
+├── gui.py               # Tkinter interface
 ├── runner.py            # Export orchestration
 ├── config.py            # Constants, mappings, report definitions
 ├── auth.py              # Google OAuth flow
@@ -179,11 +194,12 @@ your data.
 ├── requirements.txt     # Direct dependencies, version ranges
 ├── requirements.lock.txt # Fully pinned environment
 ├── .env.example
-└── credentials.example.json
+├── credentials.example.json
+└── LICENSE
 ```
 
 ---
 
 ## License
 
-MIT — © 2026 [Litzki Systems LLC](https://litzki-systems.com)
+MIT — © 2026 [Litzki Systems LLC](https://litzki-systems.com). See [LICENSE](LICENSE).

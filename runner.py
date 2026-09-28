@@ -3,14 +3,13 @@ Export runner: orchestrates all exporters and analyses per property.
 """
 import sys
 from datetime import datetime
-from pathlib import Path
 
 from config import (
     OUTPUT_DIR, GA4_MAP, GA4_ONLY, weekly_properties,
     ALL_REPORTS, PSI_TOP_N_HEADLESS, PSI_DELAY,
-    safe_filename, normalise_url, load_env,
+    safe_filename, normalise_url,
 )
-from auth import get_services
+from auth import get_services, AuthRequiresBrowser
 from exporters import gsc as gsc_exp
 from exporters import ga4 as ga4_exp
 from exporters import psi as psi_exp
@@ -27,6 +26,13 @@ def run_export(gsc, ga4_client, selected_props, selected_reports,
         today      = datetime.today().strftime("%Y-%m-%d")
         prev_start, prev_end = mom_mod.prev_period(date_start, date_end)
         all_files  = []
+
+        # Steps that fail without aborting the run. They used to be logged and
+        # forgotten, so an unattended run reported success with data missing.
+        failures = []
+        # PSI degrades per URL and records the error in the report itself, so it
+        # is reported but does not decide the exit code.
+        soft_failures = []
 
         log(f"Period:     {date_start} → {date_end}")
         log(f"Comparison: {prev_start} → {prev_end}")
@@ -78,19 +84,21 @@ def run_export(gsc, ga4_client, selected_props, selected_reports,
 
             # ── GSC Coverage ──────────────────────────────────────────────────
             if "coverage" in selected_reports:
-                sm_rows = gsc_exp.fetch_sitemaps(gsc, prop, log)
+                sm_rows = gsc_exp.fetch_sitemaps(gsc, prop, log, on_error=failures.append)
                 add("Coverage", sm_rows, gsc_exp.SITEMAPS_HEADERS)
 
             # ── GA4 Pages ─────────────────────────────────────────────────────
             ga4_rows = []
             if any(r in selected_reports for r in ["ga4","merge","mom"]) and ga4_id:
-                ga4_rows = ga4_exp.fetch_pages(ga4_client, ga4_id, date_start, date_end, log)
+                ga4_rows = ga4_exp.fetch_pages(ga4_client, ga4_id, date_start, date_end, log,
+                                               on_error=failures.append)
                 if "ga4" in selected_reports:
                     add("GA4 Pages", ga4_rows, ga4_exp.PAGES_HEADERS)
 
             # ── GA4 Sources ───────────────────────────────────────────────────
             if "ga4_sources" in selected_reports and ga4_id:
-                src_rows = ga4_exp.fetch_sources(ga4_client, ga4_id, date_start, date_end, log)
+                src_rows = ga4_exp.fetch_sources(ga4_client, ga4_id, date_start, date_end, log,
+                                                 on_error=failures.append)
                 add("GA4 Sources", src_rows, ga4_exp.SOURCES_HEADERS)
 
             # ── Merge GSC + GA4 ───────────────────────────────────────────────
@@ -167,7 +175,8 @@ def run_export(gsc, ga4_client, selected_props, selected_reports,
                 urls = [r["keys"][0] for r in sorted(
                     gsc_pages_raw, key=lambda x: x["impressions"], reverse=True
                 )]
-                psi_rows = psi_exp.run_psi_batch(urls, psi_key, psi_top_n, PSI_DELAY, log)
+                psi_rows = psi_exp.run_psi_batch(urls, psi_key, psi_top_n, PSI_DELAY, log,
+                                                 on_error=soft_failures.append)
                 add("Core Web Vitals", psi_rows, psi_exp.HEADERS, psi_exp.highlight)
 
             # ── Save XLSX ─────────────────────────────────────────────────────
@@ -184,7 +193,8 @@ def run_export(gsc, ga4_client, selected_props, selected_reports,
                 log(f"  [GA4 only: {name}]")
                 prop_dir = OUTPUT_DIR / f"{safe_filename(name)}_{today}"
                 prop_dir.mkdir(parents=True, exist_ok=True)
-                rows = ga4_exp.fetch_pages(ga4_client, ga4_id, date_start, date_end, log)
+                rows = ga4_exp.fetch_pages(ga4_client, ga4_id, date_start, date_end, log,
+                                           on_error=failures.append)
                 fname = safe_filename(name)
                 if fmt == "xlsx":
                     wb_path = prop_dir / f"{fname}_{today}.xlsx"
@@ -197,7 +207,7 @@ def run_export(gsc, ga4_client, selected_props, selected_reports,
         # ── E-Mail ────────────────────────────────────────────────────────────
         if do_send_mail and all_files:
             log("  Sending email via Resend…")
-            send_email(
+            sent = send_email(
                 env,
                 subject=f"GSC/GA4 Export {today}",
                 body=(f"Export vom {today}\n"
@@ -207,9 +217,29 @@ def run_export(gsc, ga4_client, selected_props, selected_reports,
                 attachments=all_files,
                 log=log,
             )
+            # None means "not configured", which is a deliberate opt-out.
+            if sent is False:
+                failures.append("Email delivery via Resend failed")
 
-        log("Done.")
-        on_done(success=True)
+        if not all_files:
+            failures.append("No report files were produced")
+
+        # ── Outcome ───────────────────────────────────────────────────────────
+        if soft_failures:
+            log(f"\n{len(soft_failures)} URL(s) degraded (recorded in the report):")
+            for f in soft_failures[:10]:
+                log(f"  - {f}")
+            if len(soft_failures) > 10:
+                log(f"  … and {len(soft_failures) - 10} more")
+
+        if failures:
+            log(f"\nFAILED — {len(failures)} step(s) did not complete:")
+            for f in failures:
+                log(f"  - {f}")
+            on_done(success=False)
+        else:
+            log("Done.")
+            on_done(success=True)
 
     except Exception as e:
         import traceback
@@ -229,7 +259,6 @@ def run_headless(env):
     reports = [k for _, k in ALL_REPORTS]
     psi_key = env.get("PSI_API_KEY", "")
 
-    from config import DATE_RANGES
     from datetime import timedelta
     today      = datetime.today()
     date_end   = today.strftime("%Y-%m-%d")
@@ -240,7 +269,14 @@ def run_headless(env):
     def log(msg): print(msg)
     def on_done(success): sys.exit(0 if success else 1)
 
-    gsc, ga4_client = get_services()
+    try:
+        gsc, ga4_client = get_services(interactive=False, log=log)
+    except (AuthRequiresBrowser, FileNotFoundError) as e:
+        # Both mean "a human has to set this up"; neither should surface as a
+        # raw traceback in a cron mail.
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(3)
+
     run_export(
         gsc, ga4_client, props, reports,
         date_start, date_end,

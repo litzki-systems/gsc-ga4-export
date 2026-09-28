@@ -7,7 +7,7 @@ from google.analytics.data_v1beta.types import (
 )
 
 
-def fetch_pages(ga4, property_id, date_start, date_end, log):
+def fetch_pages(ga4, property_id, date_start, date_end, log, on_error=None):
     log("    GA4: Page Performance")
     req = RunReportRequest(
         property=f"properties/{property_id}",
@@ -36,10 +36,12 @@ def fetch_pages(ga4, property_id, date_start, date_end, log):
         return sorted(rows, key=lambda x: x["sessions"], reverse=True)
     except Exception as e:
         log(f"    GA4 ERROR: {e}\n{traceback.format_exc()}")
+        if on_error:
+            on_error(f"GA4 page performance (property {property_id}): {e}")
         return []
 
 
-def fetch_sources(ga4, property_id, date_start, date_end, log):
+def fetch_sources(ga4, property_id, date_start, date_end, log, on_error=None):
     log("    GA4: Traffic Sources")
     req = RunReportRequest(
         property=f"properties/{property_id}",
@@ -67,6 +69,8 @@ def fetch_sources(ga4, property_id, date_start, date_end, log):
         return sorted(rows, key=lambda x: x["sessions"], reverse=True)
     except Exception as e:
         log(f"    GA4 sources ERROR: {e}")
+        if on_error:
+            on_error(f"GA4 traffic sources (property {property_id}): {e}")
         return []
 
 

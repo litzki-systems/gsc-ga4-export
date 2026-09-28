@@ -66,7 +66,7 @@ def fetch_discover(gsc, prop, date_start, date_end, log):
     } for r in raw], key=lambda x: x["impressions"], reverse=True)
 
 
-def fetch_sitemaps(gsc, prop, log):
+def fetch_sitemaps(gsc, prop, log, on_error=None):
     log("    GSC: Coverage/Sitemaps")
     try:
         result = gsc.sitemaps().list(siteUrl=prop).execute()
@@ -86,6 +86,8 @@ def fetch_sitemaps(gsc, prop, log):
         } for sm in result.get("sitemap", [])]
     except Exception as e:
         log(f"    WARNING Sitemaps: {e}")
+        if on_error:
+            on_error(f"GSC sitemaps ({prop}): {e}")
         return []
 
 

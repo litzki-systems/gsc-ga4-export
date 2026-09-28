@@ -6,7 +6,6 @@ import csv
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
-from pathlib import Path
 
 from config import REPORT_BRAND
 

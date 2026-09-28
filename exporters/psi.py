@@ -58,7 +58,7 @@ def fetch_psi(url, api_key, strategy="mobile"):
         }
 
 
-def run_psi_batch(urls, api_key, top_n, delay, log):
+def run_psi_batch(urls, api_key, top_n, delay, log, on_error=None):
     urls = urls[:top_n]
     rows = []
     total = len(urls) * 2
@@ -66,7 +66,14 @@ def run_psi_batch(urls, api_key, top_n, delay, log):
         for strategy in ("mobile", "desktop"):
             done = i * 2 + (0 if strategy == "mobile" else 1)
             log(f"    PSI [{done+1}/{total}] {strategy}: {url[:55]}")
-            rows.append(fetch_psi(url, api_key, strategy))
+            row = fetch_psi(url, api_key, strategy)
+            rating = row.get("overall_rating", "")
+            if isinstance(rating, str) and rating.startswith("ERROR: "):
+                # Recorded in the report too, but a cron log would not show it.
+                log(f"      {rating}")
+                if on_error:
+                    on_error(f"PSI {strategy} ({url}): {rating[7:]}")
+            rows.append(row)
             time.sleep(delay)
     return rows
 
