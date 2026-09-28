@@ -111,7 +111,34 @@ On first run, a browser window opens for Google OAuth authentication. The token 
 python3 main.py --headless
 ```
 
-Runs with the properties defined in `WEEKLY_PROPERTIES` and sends results by email if Resend is configured.
+Runs with the properties defined in `WEEKLY_PROPERTIES` and sends results by email if
+`RESEND_API_KEY`, `RESEND_TO` and `RESEND_FROM` are all set.
+
+`WEEKLY_PROPERTIES` is required in headless mode — there are no built-in defaults, and the
+run exits with code `2` if it is unset.
+
+---
+
+## Privacy & security
+
+This repository contains **no** property names, no GA4 IDs, no credentials, and no exported
+data. Everything that identifies you or a client lives in files that are git-ignored:
+
+| File | Contents | Tracked? |
+|---|---|---|
+| `.env` | API keys, GSC properties, GA4 ID mapping | no (`.env.example` is the template) |
+| `credentials.json` | Google OAuth client secret | no (`credentials.example.json` is the template) |
+| `gsc_ga4_token.json` | OAuth token, written with mode `0600` | no |
+| `gsc_export_output/` | Generated XLSX/CSV reports with client data | no |
+
+Before pushing a fork or a change, check that nothing sensitive slipped in:
+
+```bash
+git diff --cached | grep -niE "sc-domain:|GA4_|_API_KEY=|client_secret|/Users/"
+```
+
+All API calls go to Google and — only if you enable it — Resend. No other service receives
+your data.
 
 ---
 

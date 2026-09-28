@@ -10,7 +10,7 @@ from tkinter import ttk, messagebox, scrolledtext
 from datetime import datetime, timedelta
 
 from config import (
-    ALL_REPORTS, DATE_RANGES, GA4_MAP, WEEKLY_DEFAULTS,
+    ALL_REPORTS, DATE_RANGES, GA4_MAP, weekly_properties,
     PSI_TOP_N_MANUAL, OUTPUT_DIR, load_env, safe_filename,
 )
 from auth import get_services, fetch_all_gsc_properties
@@ -246,8 +246,7 @@ class App(tk.Tk):
         if len(props) > 6:
             sb.pack(side="right", fill="y")
 
-        weekly = [p.strip() for p in self.env.get("WEEKLY_PROPERTIES", "").split(",")
-                  if p.strip()] or WEEKLY_DEFAULTS
+        weekly = weekly_properties(self.env)
 
         self.prop_vars = {}
         for prop in props:
@@ -263,8 +262,15 @@ class App(tk.Tk):
         self.run_btn.configure(state="normal")
 
     def _select_weekly(self):
-        weekly = [p.strip() for p in self.env.get("WEEKLY_PROPERTIES", "").split(",")
-                  if p.strip()] or WEEKLY_DEFAULTS
+        weekly = weekly_properties(self.env)
+        if not weekly:
+            messagebox.showinfo(
+                "No weekly properties",
+                "WEEKLY_PROPERTIES is not set in .env.\n\n"
+                "Add it, for example:\n"
+                "WEEKLY_PROPERTIES=sc-domain:example.com,sc-domain:example.org",
+            )
+            return
         for p, v in self.prop_vars.items():
             v.set(p in weekly)
 

@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from config import (
-    OUTPUT_DIR, GA4_MAP, GA4_ONLY, WEEKLY_DEFAULTS,
+    OUTPUT_DIR, GA4_MAP, GA4_ONLY, weekly_properties,
     ALL_REPORTS, PSI_TOP_N_HEADLESS, PSI_DELAY,
     safe_filename, normalise_url, load_env,
 )
@@ -218,8 +218,14 @@ def run_export(gsc, ga4_client, selected_props, selected_reports,
 
 
 def run_headless(env):
-    weekly  = env.get("WEEKLY_PROPERTIES", "")
-    props   = [p.strip() for p in weekly.split(",") if p.strip()] or WEEKLY_DEFAULTS
+    props = weekly_properties(env)
+    if not props:
+        print(
+            "ERROR: WEEKLY_PROPERTIES is not set in .env — nothing to export.\n"
+            "Example: WEEKLY_PROPERTIES=sc-domain:example.com,sc-domain:example.org",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     reports = [k for _, k in ALL_REPORTS]
     psi_key = env.get("PSI_API_KEY", "")
 

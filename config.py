@@ -33,12 +33,8 @@ def _load_ga4_map():
 GA4_MAP  = _load_ga4_map()
 GA4_ONLY = {}
 
-# Weekly auto-run properties (overridden by .env WEEKLY_PROPERTIES)
-WEEKLY_DEFAULTS = [
-    "sc-domain:example.com",
-    "sc-domain:example.org",
-    "sc-domain:example.net",
-]
+# Weekly auto-run properties are configured exclusively via .env
+# (WEEKLY_PROPERTIES). No property is ever hardcoded here — see weekly_properties().
 
 DATE_RANGES = {
     "7 Days":      7,
@@ -79,6 +75,15 @@ def load_env():
                 k, v = line.split("=", 1)
                 env[k.strip()] = v.strip()
     return env
+
+
+def weekly_properties(env):
+    """GSC properties for the weekly / headless run, read from .env WEEKLY_PROPERTIES.
+
+    Returns an empty list when unconfigured — callers decide how to handle that.
+    """
+    raw = (env or {}).get("WEEKLY_PROPERTIES", "")
+    return [p.strip() for p in raw.split(",") if p.strip()]
 
 
 def safe_filename(prop):

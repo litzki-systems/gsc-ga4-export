@@ -13,8 +13,8 @@ def send_email(env, subject, body, attachments, log):
     to_addr   = env.get("RESEND_TO", "")
     from_addr = env.get("RESEND_FROM", "")
 
-    if not all([api_key, to_addr]):
-        log("    E-Mail: RESEND_API_KEY oder RESEND_TO fehlt – übersprungen.")
+    if not all([api_key, to_addr, from_addr]):
+        log("    E-Mail: RESEND_API_KEY, RESEND_TO oder RESEND_FROM fehlt – übersprungen.")
         return
 
     try:

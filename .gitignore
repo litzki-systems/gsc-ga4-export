@@ -1,7 +1,19 @@
-credentials.json
-gsc_ga4_token.json
+# Secrets & credentials — never commit
 .env
+.env.*
+!.env.example
+credentials.json
+client_secret*.json
+*token*.json
+
+# Exported reports may contain client data
+gsc_export_output/
+*.xlsx
+*.csv
+
+# OS / Python
 .DS_Store
 __pycache__/
 *.pyc
-gsc_export_output/
+.venv/
+venv/
